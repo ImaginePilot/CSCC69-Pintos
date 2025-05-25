@@ -1,0 +1,30 @@
+{
+    "configurations": [
+        {
+            "name": "(threads) Debug",
+            "type": "cppdbg",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "program": "${workspaceFolder}/src/threads/build/kernel.o",
+            "additionalSOLibSearchPath": "${workspaceFolder}/src/threads/build",
+            "MIMode": "gdb",
+            "stopAtEntry": true,
+            "miDebuggerServerAddress": "localhost:1234",
+            "preLaunchTask": "start gdb (in container)",
+            "miDebuggerArgs": "-x ${workspaceFolder}/src/misc/gdb-macros",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "text": "set substitute-path /pintos ${workspaceFolder}"
+                },
+                {
+                    "text": "set substitute-path ../../ ${workspaceFolder}/src"
+                }
+            ]
+        }
+    ]
+}

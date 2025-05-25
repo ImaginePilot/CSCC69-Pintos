@@ -88,7 +88,9 @@ struct thread
     char name[16];                      /* Name (for debugging purposes). */
     uint8_t *stack;                     /* Saved stack pointer. */
     int priority;                       /* Priority. */
+    int sleep_timer; //sleep timer added for timed sleep
     struct list_elem allelem;           /* List element for all threads list. */
+    struct list_elem timedelem; //specifically used for sleep timer
 
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
@@ -118,6 +120,10 @@ tid_t thread_create (const char *name, int priority, thread_func *, void *);
 
 void thread_block (void);
 void thread_unblock (struct thread *);
+
+void thread_timed_block(int);
+void thread_timed_unblock(struct thread*);
+void thread_timer_update_foreach(long long);
 
 struct thread *thread_current (void);
 tid_t thread_tid (void);

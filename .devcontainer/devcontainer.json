@@ -1,0 +1,7 @@
+{
+    "remoteEnv": {
+      "VSCODE_SERVER_COMMIT_ID": "d045a5eda657f4d7b676dedbfa711445ae0ebace"
+    },
+    "postCreateCommand": "bash -c 'curl -fsSL https://raw.githubusercontent.com/microsoft/vscode-dev-containers/main/script-library/vscode-server.sh | bash -s -- --commit ${VSCODE_SERVER_COMMIT_ID}'"
+  }
+  

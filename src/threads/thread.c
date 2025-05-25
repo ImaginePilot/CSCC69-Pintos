@@ -28,6 +28,15 @@ static struct list ready_list;
    when they are first scheduled and removed when they exit. */
 static struct list all_list;
 
+/* List of timed wait processes. The scheduler should check this
+list every time it is trying to schedule a new thread. The threads
+here should be moved to ready once the wait ticks are lower than zero */
+static struct list timed_wait;
+
+
+/* For storing the previous total ticks for the schedular*/
+static long long prev_elapsed;
+
 /* Idle thread. */
 static struct thread *idle_thread;
 
@@ -92,6 +101,7 @@ thread_init (void)
   lock_init (&tid_lock);
   list_init (&ready_list);
   list_init (&all_list);
+  list_init (&timed_wait);//added for timed wait
 
   /* Set up a thread structure for the running thread. */
   initial_thread = running_thread ();
@@ -242,6 +252,37 @@ thread_unblock (struct thread *t)
   intr_set_level (old_level);
 }
 
+/* Similar to thread_block, this function puts the thread to sleep, but
+  resets the timer value in the struct thread and appends the thread 
+  into list timed_wait*/
+void thread_timed_block(int ticks){
+  ASSERT (!intr_context ());
+  enum intr_level old_level;
+  old_level = intr_disable ();
+  //ASSERT (intr_get_level () == INTR_OFF);
+
+  struct thread* t=thread_current();
+  t->sleep_timer=ticks;
+  list_push_back (&timed_wait, &t->timedelem);
+  t->status = THREAD_BLOCKED;
+  schedule ();
+}
+/* Similar to thread unblock, this function puts the thread back to ready,
+but also removes the thread from the timed wait checklist.
+*/
+void thread_timed_unblock(struct thread *t){
+  enum intr_level old_level;
+
+  ASSERT (is_thread (t));
+
+  old_level = intr_disable ();
+  ASSERT (t->status == THREAD_BLOCKED);
+  list_remove(&t->timedelem); //remove from timed wait first
+  list_push_back (&ready_list, &t->elem);
+  t->status = THREAD_READY;
+  intr_set_level (old_level);
+}
+
 /* Returns the name of the running thread. */
 const char *
 thread_name (void) 
@@ -330,6 +371,23 @@ thread_foreach (thread_action_func *func, void *aux)
       func (t, aux);
     }
 }
+
+/* Updates the timer value for all threads in timed_wait list*/
+void thread_timer_update_foreach(long long elapsed){
+  struct list_elem *e;
+  //ASSERT (intr_get_level () == INTR_OFF);
+  for (e = list_begin (&timed_wait); e != list_end (&timed_wait);
+       e = list_next (e))
+    {
+      struct thread *t = list_entry (e, struct thread, timedelem);
+      t->sleep_timer=t->sleep_timer-elapsed;
+      if(t->sleep_timer<=0){
+        thread_timed_unblock(t);
+      }
+    }
+
+}
+
 
 /* Sets the current thread's priority to NEW_PRIORITY. */
 void
@@ -490,6 +548,18 @@ alloc_frame (struct thread *t, size_t size)
 static struct thread *
 next_thread_to_run (void) 
 {
+  /*  Whenever we are deciding if the next thread is valid, 
+      we try to refresh the counters of all the elements in
+      timed wait.
+  */
+
+  //update the eplased timer
+  long long current_elapsed=idle_ticks+kernel_ticks+user_ticks;
+  long long elapsed=current_elapsed-prev_elapsed;
+  prev_elapsed=current_elapsed;
+
+  thread_timer_update_foreach(elapsed);
+
   if (list_empty (&ready_list))
     return idle_thread;
   else
