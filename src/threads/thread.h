@@ -24,6 +24,7 @@ typedef int tid_t;
 #define PRI_DEFAULT 31                  /* Default priority. */
 #define PRI_MAX 63                      /* Highest priority. */
 
+#define DEFAULT_DEPTH 8
 /* A kernel thread or user process.
 
    Each thread structure is stored in its own 4 kB page.  The
@@ -88,9 +89,20 @@ struct thread
     char name[16];                      /* Name (for debugging purposes). */
     uint8_t *stack;                     /* Saved stack pointer. */
     int priority;                       /* Priority. */
+    /*donation can only be larger than zero, it means how much is given out
+    whereas recieve can be the sum of multiple processes*/
+    int current_priority;
+
+    struct list donors;
+    struct thread* donate_to;
+
     int sleep_timer; //sleep timer added for timed sleep
     struct list_elem allelem;           /* List element for all threads list. */
     struct list_elem timedelem; //specifically used for sleep timer
+    //struct list_elem priorityelem; //for maintaining priority queue
+    struct list* waiter;
+
+    struct list_elem donorelem;
 
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
@@ -120,7 +132,7 @@ tid_t thread_create (const char *name, int priority, thread_func *, void *);
 
 void thread_block (void);
 void thread_unblock (struct thread *);
-
+void thread_unblock_lock (struct thread *); 
 void thread_timed_block(int);
 void thread_timed_unblock(struct thread*);
 void thread_timer_update_foreach(long long);
@@ -135,13 +147,28 @@ void thread_yield (void);
 /* Performs some operation on thread t, given auxiliary data AUX. */
 typedef void thread_action_func (struct thread *t, void *aux);
 void thread_foreach (thread_action_func *, void *);
+//void thread_refresh_priority_list_recursive(struct thread*, int);
+//void thread_refresh_priority_list(struct thread*);
+
+void thread_clear_donation (struct thread*);
+void thread_donate(struct thread*, struct thread*);
+void thread_donate_return(struct thread*);
+void thread_refresh_current_priority(struct thread*,int);
 
 int thread_get_priority (void);
+int thread_get_priority_for (struct thread*);
+//void thread_priority_list_swap_neighbours(struct thread*, struct thread*);
+
 void thread_set_priority (int);
 
 int thread_get_nice (void);
 void thread_set_nice (int);
 int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
+
+void thread_readylist_insert(struct thread*);
+void thread_readylist_remove(struct thread*);
+void thread_readylist_refresh(struct thread*);
+bool thread_readylist_sort_high(const struct list_elem*, const struct list_elem*,void*);
 
 #endif /* threads/thread.h */

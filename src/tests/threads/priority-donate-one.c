@@ -38,6 +38,10 @@ test_priority_donate_one (void)
   msg ("This thread should have priority %d.  Actual priority: %d.",
        PRI_DEFAULT + 2, thread_get_priority ());
   lock_release (&lock);
+  //struct thread* dest=list_entry(list_begin(&lock.semaphore.waiters),struct thread,elem);
+  //msg("desttid is:%d",dest->tid);
+  //msg ("This thread should have priority %d.  Actual priority: %d.",
+  //  PRI_DEFAULT, thread_get_priority ());
   msg ("acquire2, acquire1 must already have finished, in that order.");
   msg ("This should be the last line before finishing this test.");
 }
@@ -46,7 +50,8 @@ static void
 acquire1_thread_func (void *lock_) 
 {
   struct lock *lock = lock_;
-
+  //int tid=thread_current()->tid;
+  //msg ("acquire1,%d: trying to get",tid);
   lock_acquire (lock);
   msg ("acquire1: got the lock");
   lock_release (lock);
@@ -57,7 +62,8 @@ static void
 acquire2_thread_func (void *lock_) 
 {
   struct lock *lock = lock_;
-
+  //int tid=thread_current()->tid;
+  //msg ("acquire2,%d: trying to get",tid);
   lock_acquire (lock);
   msg ("acquire2: got the lock");
   lock_release (lock);

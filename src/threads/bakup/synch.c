@@ -127,20 +127,6 @@ sema_up (struct semaphore *sema)
   intr_set_level (old_level);
 }
 
-void
-sema_up_lock (struct semaphore *sema) 
-{
-  enum intr_level old_level;
-
-  ASSERT (sema != NULL);
-
-  old_level = intr_disable ();
-  
-  sema->value++;
-  intr_set_level (old_level);
-}
-
-
 static void sema_test_helper (void *sema_);
 
 /* Self-test for semaphores that makes control "ping-pong"
@@ -218,11 +204,11 @@ lock_acquire (struct lock *lock)
   ASSERT (!lock_held_by_current_thread (lock));
 
   enum intr_level old_level = intr_disable();
-  if(lock->holder!=NULL){
-    struct thread*t=thread_current();
-    thread_donate(t,lock->holder);
+  //if(lock->holder!=NULL){
+  //  struct thread*t=thread_current();
+   // thread_donate(t,lock->holder);
     //msg("donating from %d,%d to %d,%d",t->tid,t->current_priority,lock->holder->tid,lock->holder->current_priority);
-  }
+  //}
   
 
   sema_down (&lock->semaphore);
@@ -273,36 +259,18 @@ lock_release (struct lock *lock)
   ASSERT (lock_held_by_current_thread (lock));
 
   enum intr_level old_level = intr_disable();
-  struct thread* t=thread_current();
-  struct list_elem* e = list_begin(&t->donors);
-  while (e != list_end(&t->donors))
-  {
-      struct thread* donor = list_entry(e, struct thread, donorelem);
-      e = list_next(e);
-      //for(struct list_elem* p=list_begin(&lock->semaphore.waiters);p!=list_end(&lock->semaphore.waiters);p=p->next){
-      //  if (&donor->elem == p) {
-      //    thread_donate_return(donor);
-      //    break;
-      //  }
-      //}
-
-      if(donor->waiter==&lock->semaphore.waiters){
-        thread_donate_return(donor);
-      }
-      
-  }
-  struct thread* q=NULL;
-  if (!list_empty (&lock->semaphore.waiters)) {
-    q=list_entry (list_pop_front (&lock->semaphore.waiters),struct thread, elem);
-    q->waiter=NULL;
-  }
-
-  lock->holder = q;
-  sema_up_lock (&lock->semaphore);
-  if(q!=NULL){
-    thread_unblock_lock(q);
-  }
+  //struct thread* t=thread_current();
+  //while(!list_empty(&t->donors)){
+    
+  //  struct list_elem* e=list_begin(&t->donors);
+  //  struct thread* p=list_entry(e,struct thread,donorelem);
+  //  thread_donate_return(p);
+    //msg("removing donor %d from %d, currentpriority %d\n",p->tid,t->tid,t->current_priority);
+  //}
   
+ 
+  lock->holder = NULL;
+  sema_up (&lock->semaphore);
   intr_set_level(old_level);
 }
 
